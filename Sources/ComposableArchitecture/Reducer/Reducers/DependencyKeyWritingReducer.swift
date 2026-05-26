@@ -23,7 +23,7 @@ extension Reducer {
   ///   }
   ///
   ///   var body: some Reducer<State, Action> {
-  ///     Scope(state: \.feature, action: \.feature) {
+  ///     Scope(\.feature, action: \.feature) {
   ///       Feature()
   ///     }
   ///
@@ -46,7 +46,7 @@ extension Reducer {
   ///
   /// ```swift
   /// var body: some Reducer<State, Action> {
-  ///   Scope(state: \.feature, action: \.feature) {
+  ///   Scope(\.feature, action: \.feature) {
   ///     Feature()
   ///       .dependency(\.apiClient, .mock)
   ///       .dependency(\.userDefaults, .mock)
@@ -166,13 +166,13 @@ public struct _DependencyKeyWritingReducer<Base: Reducer>: Reducer {
   }
 
   @inlinable
-  public func reduce(
+  public func _reduce(
     into state: inout Base.State, action: Base.Action
   ) -> Effect<Base.Action> {
     withDependencies {
       self.update(&$0)
     } operation: {
-      self.base.reduce(into: &state, action: action)
+      self.base._reduce(into: &state, action: action)
     }
   }
 

@@ -42,7 +42,7 @@ struct VoiceMemos {
       case .alert:
         return .none
 
-      case let .onDelete(indexSet):
+      case .onDelete(let indexSet):
         state.voiceMemos.remove(atOffsets: indexSet)
         return .none
 
@@ -67,7 +67,7 @@ struct VoiceMemos {
           return .none
         }
 
-      case let .recordingMemo(.presented(.delegate(.didFinish(.success(recordingMemo))))):
+      case .recordingMemo(.presented(.delegate(.didFinish(.success(let recordingMemo))))):
         state.recordingMemo = nil
         state.voiceMemos.insert(
           VoiceMemo.State(
@@ -87,7 +87,7 @@ struct VoiceMemos {
       case .recordingMemo:
         return .none
 
-      case let .recordPermissionResponse(permission):
+      case .recordPermissionResponse(let permission):
         state.audioRecorderPermission = permission ? .allowed : .denied
         if permission {
           state.recordingMemo = newRecordingMemo
@@ -97,7 +97,7 @@ struct VoiceMemos {
           return .none
         }
 
-      case let .voiceMemos(.element(id: id, action: .delegate(delegateAction))):
+      case .voiceMemos(.element(id: let id, action: .delegate(let delegateAction))):
         switch delegateAction {
         case .playbackFailed:
           state.alert = AlertState { TextState("Voice memo playback failed.") }
@@ -139,7 +139,7 @@ struct VoiceMemosView: View {
     NavigationStack {
       VStack {
         List {
-          ForEach(store.scope(state: \.voiceMemos, action: \.voiceMemos)) { store in
+          ForEach(store.scope(\.voiceMemos, action: \.voiceMemos)) { store in
             VoiceMemoView(store: store)
           }
           .onDelete { store.send(.onDelete($0)) }
@@ -147,7 +147,7 @@ struct VoiceMemosView: View {
 
         Group {
           if let store = store.scope(
-            state: \.recordingMemo, action: \.recordingMemo.presented
+            \.recordingMemo, action: \.recordingMemo.presented
           ) {
             RecordingMemoView(store: store)
           } else {
@@ -162,7 +162,7 @@ struct VoiceMemosView: View {
         .frame(maxWidth: .infinity)
         .background(Color.init(white: 0.95))
       }
-      .alert($store.scope(state: \.alert, action: \.alert))
+      .alert($store.scope(\.alert, action: \.alert))
       .navigationTitle("Voice memos")
     }
   }

@@ -42,7 +42,7 @@ struct SyncUpsList {
         return .none
 
       case .confirmAddSyncUpButtonTapped:
-        guard case let .some(.add(editState)) = state.destination
+        guard case .some(.add(let editState)) = state.destination
         else { return .none }
         var syncUp = editState.syncUp
         syncUp.attendees.removeAll { attendee in
@@ -65,7 +65,7 @@ struct SyncUpsList {
         state.destination = nil
         return .none
 
-      case let .onDelete(indexSet):
+      case .onDelete(let indexSet):
         state.$syncUps.withLock { $0.remove(atOffsets: indexSet) }
         return .none
       }
@@ -99,7 +99,7 @@ struct SyncUpsListView: View {
     }
     .navigationTitle("Daily Sync-ups")
     .sheet(
-      item: $store.scope(state: \.destination?.add, action: \.destination.add)
+      item: $store.scope(\.destination?.add, action: \.destination.add)
     ) { addSyncUpStore in
       NavigationStack {
         SyncUpFormView(store: addSyncUpStore)

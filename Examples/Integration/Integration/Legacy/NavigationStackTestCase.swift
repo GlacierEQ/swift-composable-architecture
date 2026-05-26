@@ -56,7 +56,7 @@ private struct ChildFeature {
         return .none
       case .recreateStack:
         return .none
-      case let .response(value):
+      case .response(let value):
         state.count = value
         return .none
       case .runButtonTapped:
@@ -125,9 +125,9 @@ private struct ChildView: View {
         print("onAppear")
         viewStore.send(.onAppear)
       }
-      .alert(store: self.store.scope(state: \.$alert, action: \.alert))
+      .alert(store: self.store.scope(\.$alert, action: \.alert))
       .navigationDestination(
-        store: self.store.scope(state: \.$navigationDestination, action: \.navigationDestination)
+        store: self.store.scope(\.$navigationDestination, action: \.navigationDestination)
       ) {
         DestinationView(store: $0)
       }
@@ -147,7 +147,7 @@ private struct NavigationStackTestCase {
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
-      case let .child(.element(id: _, action: .response(value))):
+      case .child(.element(id: _, action: .response(let value))):
         state.childResponse = value
         return .none
       case .child(.element(id: _, action: .recreateStack)):
@@ -156,7 +156,7 @@ private struct NavigationStackTestCase {
       case .child(.element(id: _, action: .popToRootButtonTapped)):
         state.children = StackState()
         return .none
-      case let .child(.element(id: id, action: .alert(.presented(.pop)))):
+      case .child(.element(id: let id, action: .alert(.presented(.pop)))):
         state.children.pop(from: id)
         return .none
       case .child:
@@ -183,7 +183,7 @@ struct NavigationStackTestCaseView: View {
   }
 
   var body: some View {
-    NavigationStackStore(self.store.scope(state: \.children, action: \.child)) {
+    NavigationStackStore(self.store.scope(\.children, action: \.child)) {
       WithViewStore(self.store, observe: \.childResponse) { viewStore in
         Form {
           if let childResponse = viewStore.state {

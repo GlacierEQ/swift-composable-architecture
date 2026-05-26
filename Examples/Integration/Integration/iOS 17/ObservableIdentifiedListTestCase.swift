@@ -21,7 +21,7 @@ struct ObservableIdentifiedListView: View {
             }
           }
         }
-        ForEach(self.store.scope(state: \.rows, action: \.rows)) { store in
+        ForEach(self.store.scope(\.rows, action: \.rows)) { store in
           let _ = Logger.shared.log("\(Self.self).body.ForEach")
           Section {
             HStack {
@@ -66,7 +66,7 @@ struct ObservableIdentifiedListView: View {
         case .incrementFirstButtonTapped:
           state.rows[id: state.rows.ids[0]]?.count += 1
           return .none
-        case let .removeButtonTapped(id: id):
+        case .removeButtonTapped(let id):
           state.rows.remove(id: id)
           return .none
         case .rows:

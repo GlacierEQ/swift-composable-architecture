@@ -80,7 +80,7 @@ extension BindingAction {
   }
 
   public static func ~= <Value>(
-    keyPath: WritableKeyPath<Root, Value>,
+    keyPath: _SendableWritableKeyPath<Root, Value>,
     bindingAction: Self
   ) -> Bool where Root: ObservableState {
     keyPath == bindingAction.keyPath
@@ -100,17 +100,18 @@ extension BindingAction {
       self.isInvalidated = isInvalidated
     }
     deinit {
-      let isInvalidated = mainActorNow(execute: isInvalidated)
-      guard !isInvalidated else { return }
-      guard wasCalled.value else {
+      guard !wasCalled.value
+      else { return }
+      Task { @MainActor [value, isInvalidated] in
+        guard !isInvalidated() else { return }
         var valueDump: String {
           var valueDump = ""
-          customDump(self.value, to: &valueDump, maxDepth: 0)
+          customDump(value, to: &valueDump, maxDepth: 0)
           return valueDump
         }
         reportIssue(
           """
-          A binding action sent from a store was not handled. …
+          A binding action sent from a store was not handled.
 
             Action:
               \(typeName(Action.self)).binding(.set(_, \(valueDump)))
@@ -118,7 +119,6 @@ extension BindingAction {
           To fix this, invoke "BindingReducer()" from your feature reducer's "body".
           """
         )
-        return
       }
     }
   }
@@ -168,6 +168,7 @@ extension BindableAction where State: ObservableState {
 }
 
 extension Store where State: ObservableState, Action: BindableAction, Action.State == State {
+  @_disfavoredOverload
   public subscript<Value: Equatable & Sendable>(
     dynamicMember keyPath: WritableKeyPath<State, Value>
   ) -> Value {
@@ -212,6 +213,7 @@ where
   Action.ViewAction: BindableAction,
   Action.ViewAction.State == State
 {
+  @_disfavoredOverload
   public subscript<Value: Equatable & Sendable>(
     dynamicMember keyPath: WritableKeyPath<State, Value>
   ) -> Value {
@@ -272,11 +274,7 @@ public struct _StoreBinding<State: ObservableState, Action, Value> {
   ///
   /// - Parameter action: An action for the binding to send values through.
   /// - Returns: A binding.
-  #if swift(<5.10)
-    @MainActor(unsafe)
-  #else
-    @preconcurrency@MainActor
-  #endif
+  @preconcurrency @MainActor
   public func sending(_ action: CaseKeyPath<Action, Value>) -> Binding<Value> {
     self.binding[state: self.keyPath, action: action]
   }
@@ -300,11 +298,7 @@ public struct _StoreObservedObject<State: ObservableState, Action, Value> {
   ///
   /// - Parameter action: An action for the binding to send values through.
   /// - Returns: A binding.
-  #if swift(<5.10)
-    @MainActor(unsafe)
-  #else
-    @preconcurrency@MainActor
-  #endif
+  @preconcurrency @MainActor
   public func sending(_ action: CaseKeyPath<Action, Value>) -> Binding<Value> {
     self.wrapper[state: self.keyPath, action: action]
   }
@@ -353,11 +347,7 @@ public struct _StoreBindable_SwiftUI<State: ObservableState, Action, Value> {
   ///
   /// - Parameter action: An action for the binding to send values through.
   /// - Returns: A binding.
-  #if swift(<5.10)
-    @MainActor(unsafe)
-  #else
-    @preconcurrency@MainActor
-  #endif
+  @preconcurrency @MainActor
   public func sending(_ action: CaseKeyPath<Action, Value>) -> Binding<Value> {
     self.bindable[state: self.keyPath, action: action]
   }
@@ -386,11 +376,7 @@ public struct _StoreBindable_Perception<State: ObservableState, Action, Value> {
   ///
   /// - Parameter action: An action for the binding to send values through.
   /// - Returns: A binding.
-  #if swift(<5.10)
-    @MainActor(unsafe)
-  #else
-    @preconcurrency@MainActor
-  #endif
+  @preconcurrency @MainActor
   public func sending(_ action: CaseKeyPath<Action, Value>) -> Binding<Value> {
     self.bindable[state: self.keyPath, action: action]
   }

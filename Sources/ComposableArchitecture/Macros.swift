@@ -38,13 +38,7 @@ public macro Reducer() =
 )
 @attached(memberAttribute)
 @attached(extension, conformances: Reducer, CaseReducer)
-#if compiler(>=6)
-  @available(iOS, deprecated: 9999, message: "Define your conformance via extension, instead.")@available(
-    macOS, deprecated: 9999, message: "Define your conformance via extension, instead."
-  )@available(tvOS, deprecated: 9999, message: "Define your conformance via extension, instead.")@available(
-    watchOS, deprecated: 9999, message: "Define your conformance via extension, instead."
-  )
-#endif
+@available(*, deprecated, message: "Define your conformance using an extension, instead")
 public macro Reducer(state: _SynthesizedConformance..., action: _SynthesizedConformance...) =
   #externalMacro(
     module: "ComposableArchitectureMacros", type: "ReducerMacro"
@@ -55,15 +49,10 @@ public macro Reducer(state: _SynthesizedConformance..., action: _SynthesizedConf
 ///
 /// See <doc:Reducers#Synthesizing-protocol-conformances-on-State-and-Action> for more information.
 @_documentation(visibility: public)
-#if compiler(>=6)
-  @available(iOS, deprecated: 9999, message: "Define your conformance via extension, instead.")@available(
-    macOS, deprecated: 9999, message: "Define your conformance via extension, instead."
-  )@available(tvOS, deprecated: 9999, message: "Define your conformance via extension, instead.")@available(
-    watchOS, deprecated: 9999, message: "Define your conformance via extension, instead."
-  )
-#endif
+@available(*, deprecated, message: "Define your conformance using an extension, instead")
 public struct _SynthesizedConformance: Sendable {}
 
+@available(*, deprecated, message: "Define your conformance using an extension, instead")
 extension _SynthesizedConformance {
   /// Extends the `State` or `Action` types that ``Reducer()`` creates with the `Codable`
   /// protocol.
@@ -128,7 +117,9 @@ public macro ReducerCaseIgnored() =
 
 /// Defines and implements conformance of the Observable protocol.
 @attached(extension, conformances: Observable, ObservableState)
-@attached(member, names: named(_$id), named(_$observationRegistrar), named(_$willModify))
+@attached(
+  member, names: named(_$id), named(_$observationRegistrar), named(_$willModify),
+  named(shouldNotifyObservers))
 @attached(memberAttribute)
 public macro ObservableState() =
   #externalMacro(module: "ComposableArchitectureMacros", type: "ObservableStateMacro")

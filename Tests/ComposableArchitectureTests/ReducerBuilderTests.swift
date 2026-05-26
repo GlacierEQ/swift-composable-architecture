@@ -71,11 +71,11 @@ private struct Root {
 
   var body: some ReducerOf<Self> {
     CombineReducers {
-      Scope(state: \.feature, action: \.feature) {
+      Scope(\.feature, action: \.feature) {
         Feature()
         Feature()
       }
-      Scope(state: \.feature, action: \.feature) {
+      Scope(\.feature, action: \.feature) {
         Feature()
         Feature()
       }
@@ -151,12 +151,13 @@ private struct Root {
     }
 
     var body: some ReducerOf<Self> {
-      Scope(state: \.featureA, action: \.featureA) {
-        Feature()
-      }
-      Scope(state: \.featureB, action: \.featureB) {
-        Feature()
-      }
+      EmptyReducer()
+        .ifCaseLet(\.featureA, action: \.featureA) {
+          Feature()
+        }
+        .ifCaseLet(\.featureB, action: \.featureB) {
+          Feature()
+        }
     }
   }
 }
@@ -216,7 +217,7 @@ private struct ScopeIfLetExample {
   enum Action {}
 
   var body: some ReducerOf<Self> {
-    Scope(state: \.self, action: \.self) {
+    Scope(\.self, action: \.self) {
       EmptyReducer()
         .ifLet(\.optionalSelf, action: \.self) {
           EmptyReducer()

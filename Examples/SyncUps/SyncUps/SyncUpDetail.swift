@@ -5,8 +5,14 @@ import SwiftUI
 struct SyncUpDetail {
   @Reducer
   enum Destination {
-    case alert(AlertState<Alert>)
+    @ReducerCaseIgnored case alert(AlertState<Alert>)
     case edit(SyncUpForm)
+
+    @CasePathable
+    enum Action {
+      case alert(Alert)
+      case edit(SyncUpForm.Action)
+    }
 
     @CasePathable
     enum Alert {
@@ -56,11 +62,11 @@ struct SyncUpDetail {
         state.destination = .alert(.deleteSyncUp)
         return .none
 
-      case let .deleteMeetings(atOffsets: indices):
+      case .deleteMeetings(atOffsets: let indices):
         state.$syncUp.withLock { $0.meetings.remove(atOffsets: indices) }
         return .none
 
-      case let .destination(.presented(.alert(alertAction))):
+      case .destination(.presented(.alert(let alertAction))):
         switch alertAction {
         case .confirmDeletion:
           @Shared(.syncUps) var syncUps
@@ -78,7 +84,7 @@ struct SyncUpDetail {
         return .none
 
       case .doneEditingButtonTapped:
-        guard case let .some(.edit(editState)) = state.destination
+        guard case .some(.edit(let editState)) = state.destination
         else { return .none }
         state.$syncUp.withLock { $0 = editState.syncUp }
         state.destination = nil
@@ -186,9 +192,9 @@ struct SyncUpDetailView: View {
       }
     }
     .navigationTitle(store.syncUp.title)
-    .alert($store.scope(state: \.destination?.alert, action: \.destination.alert))
+    .alert($store.scope(\.$destination, action: \.destination).alert)
     .sheet(
-      item: $store.scope(state: \.destination?.edit, action: \.destination.edit)
+      item: $store.scope(\.$destination, action: \.destination).edit
     ) { editSyncUpStore in
       NavigationStack {
         SyncUpFormView(store: editSyncUpStore)

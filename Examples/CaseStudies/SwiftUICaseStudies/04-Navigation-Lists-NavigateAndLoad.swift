@@ -40,7 +40,7 @@ struct NavigateAndLoadList {
       case .counter:
         return .none
 
-      case let .setNavigation(selection: .some(id)):
+      case .setNavigation(selection: .some(let id)):
         state.selection = Identified(nil, id: id)
         return .run { send in
           try await self.clock.sleep(for: .seconds(1))
@@ -88,7 +88,7 @@ struct NavigateAndLoadListView: View {
             set: { id in store.send(.setNavigation(selection: id)) }
           )
         ) {
-          if let store = store.scope(state: \.selection?.value, action: \.counter) {
+          if let store = store.scope(\.selection?.value, action: \.counter) {
             CounterView(store: store)
           } else {
             ProgressView()

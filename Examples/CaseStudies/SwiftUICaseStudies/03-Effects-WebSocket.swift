@@ -89,12 +89,12 @@ struct WebSocket {
           .cancellable(id: WebSocketClient.ID())
         }
 
-      case let .messageToSendChanged(message):
+      case .messageToSendChanged(let message):
         state.messageToSend = message
         return .none
 
-      case let .receivedSocketMessage(.success(message)):
-        if case let .string(string) = message {
+      case .receivedSocketMessage(.success(let message)):
+        if case .string(let string) = message {
           state.receivedMessages.append(string)
         }
         return .none
@@ -182,7 +182,7 @@ struct WebSocketView: View {
         Text("Received messages")
       }
     }
-    .alert($store.scope(state: \.alert, action: \.alert))
+    .alert($store.scope(\.alert, action: \.alert))
     .navigationTitle("Web Socket")
   }
 }
@@ -217,8 +217,8 @@ struct WebSocketClient {
 
     init(_ message: URLSessionWebSocketTask.Message) throws {
       switch message {
-      case let .data(data): self = .data(data)
-      case let .string(string): self = .string(string)
+      case .data(let data): self = .data(data)
+      case .string(let string): self = .string(string)
       @unknown default: throw Unknown()
       }
     }

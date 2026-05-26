@@ -28,9 +28,9 @@ struct IdentifiedListView: View {
             }
           }
         }
-        ForEachStore(self.store.scope(state: \.rows, action: \.rows)) { store in
+        ForEachStore(self.store.scope(\.rows, action: \.rows)) { store in
           let _ = Logger.shared.log("\(Self.self).body.ForEachStore")
-          let idStore = store.scope(state: \.id, action: \.self)
+          let idStore = store.scope(\.id, action: \.self)
           WithViewStore(idStore, observe: { $0 }) { viewStore in
             let _ = Logger.shared.log("\(type(of: idStore))")
             Section {
@@ -76,7 +76,7 @@ struct IdentifiedListView: View {
         case .incrementFirstButtonTapped:
           state.rows[id: state.rows.ids[0]]?.count += 1
           return .none
-        case let .removeButtonTapped(id: id):
+        case .removeButtonTapped(let id):
           state.rows.remove(id: id)
           return .none
         case .rows:

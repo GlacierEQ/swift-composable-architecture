@@ -48,7 +48,7 @@ extension Binding {
   ///   @Bindable var store: StoreOf<Feature>
   ///
   ///   var body: some View {
-  ///     NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+  ///     NavigationStack(path: $store.scope(\.path, action: \.path)) {
   ///       // Root view
   ///     } destination: {
   ///       // Destinations
@@ -56,11 +56,24 @@ extension Binding {
   ///   }
   /// }
   /// ```
-  #if swift(>=5.10)
-    @preconcurrency@MainActor
+  @preconcurrency @MainActor
+  public func scope<State: ObservableState, Action, ElementState, ElementAction>(
+    _ state: KeyPath<State, StackState<ElementState>>,
+    action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
+  ) -> Binding<Store<StackState<ElementState>, StackAction<ElementState, ElementAction>>>
+  where Value == Store<State, Action> {
+    self[state: state, action: action]
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
   #else
-    @MainActor(unsafe)
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
   #endif
+  @preconcurrency @MainActor
   public func scope<State: ObservableState, Action, ElementState, ElementAction>(
     state: KeyPath<State, StackState<ElementState>>,
     action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
@@ -71,11 +84,24 @@ extension Binding {
 }
 
 extension ObservedObject.Wrapper {
-  #if swift(>=5.10)
-    @preconcurrency@MainActor
+  @preconcurrency @MainActor
+  public func scope<State: ObservableState, Action, ElementState, ElementAction>(
+    _ state: KeyPath<State, StackState<ElementState>>,
+    action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
+  ) -> Binding<Store<StackState<ElementState>, StackAction<ElementState, ElementAction>>>
+  where ObjectType == Store<State, Action> {
+    self[state: state, action: action]
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
   #else
-    @MainActor(unsafe)
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
   #endif
+  @preconcurrency @MainActor
   public func scope<State: ObservableState, Action, ElementState, ElementAction>(
     state: KeyPath<State, StackState<ElementState>>,
     action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
@@ -89,13 +115,26 @@ extension ObservedObject.Wrapper {
 extension SwiftUI.Bindable {
   /// Derives a binding to a store focused on ``StackState`` and ``StackAction``.
   ///
-  /// See ``SwiftUI/Binding/scope(state:action:fileID:filePath:line:column:)`` defined on `Binding` for more
-  /// information.
-  #if swift(>=5.10)
-    @preconcurrency@MainActor
+  /// See ``SwiftUI/Binding/scope(_:action:fileID:filePath:line:column:)`` defined on `Binding` for
+  /// more information.
+  @preconcurrency @MainActor
+  public func scope<State: ObservableState, Action, ElementState, ElementAction>(
+    _ state: KeyPath<State, StackState<ElementState>>,
+    action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
+  ) -> Binding<Store<StackState<ElementState>, StackAction<ElementState, ElementAction>>>
+  where Value == Store<State, Action> {
+    self[state: state, action: action]
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
   #else
-    @MainActor(unsafe)
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
   #endif
+  @preconcurrency @MainActor
   public func scope<State: ObservableState, Action, ElementState, ElementAction>(
     state: KeyPath<State, StackState<ElementState>>,
     action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
@@ -112,8 +151,24 @@ extension SwiftUI.Bindable {
 extension Perception.Bindable {
   /// Derives a binding to a store focused on ``StackState`` and ``StackAction``.
   ///
-  /// See ``SwiftUI/Binding/scope(state:action:fileID:filePath:line:column:)`` defined on `Binding` for more
-  /// information.
+  /// See ``SwiftUI/Binding/scope(_:action:fileID:filePath:line:column:)`` defined on `Binding` for
+  /// more information.
+  public func scope<State: ObservableState, Action, ElementState, ElementAction>(
+    _ state: KeyPath<State, StackState<ElementState>>,
+    action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
+  ) -> Binding<Store<StackState<ElementState>, StackAction<ElementState, ElementAction>>>
+  where Value == Store<State, Action> {
+    self[state: state, action: action]
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
+  #else
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
+  #endif
   public func scope<State: ObservableState, Action, ElementState, ElementAction>(
     state: KeyPath<State, StackState<ElementState>>,
     action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
@@ -128,11 +183,24 @@ extension UIBindable {
   ///
   /// See ``SwiftUI/Binding/scope(state:action:fileID:filePath:line:column:)`` defined on `Binding` for more
   /// information.
-  #if swift(>=5.10)
-    @preconcurrency@MainActor
+  @preconcurrency @MainActor
+  public func scope<State: ObservableState, Action, ElementState, ElementAction>(
+    _ state: KeyPath<State, StackState<ElementState>>,
+    action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
+  ) -> UIBinding<Store<StackState<ElementState>, StackAction<ElementState, ElementAction>>>
+  where Value == Store<State, Action> {
+    self[state: state, action: action]
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
   #else
-    @MainActor(unsafe)
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
   #endif
+  @preconcurrency @MainActor
   public func scope<State: ObservableState, Action, ElementState, ElementAction>(
     state: KeyPath<State, StackState<ElementState>>,
     action: CaseKeyPath<Action, StackAction<ElementState, ElementAction>>
@@ -142,7 +210,6 @@ extension UIBindable {
   }
 }
 
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 extension NavigationStack {
   /// Drives a navigation stack with a store.
   ///
@@ -185,7 +252,6 @@ extension NavigationStack {
   }
 }
 
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 public struct _NavigationDestinationViewModifier<
   State: ObservableState, Action, Destination: View
 >:
@@ -254,7 +320,6 @@ extension Store {
   }
 }
 
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 extension NavigationLink where Destination == Never {
   /// Creates a navigation link that presents the view corresponding to an element of
   /// ``StackState``.
@@ -273,9 +338,7 @@ extension NavigationLink where Destination == Never {
   ///   - filePath: The filePath.
   ///   - line: The line.
   ///   - column: The column.
-  #if compiler(>=6)
-    @MainActor
-  #endif
+  @MainActor
   public init<P, L: View>(
     state: P?,
     @ViewBuilder label: () -> L,
@@ -314,9 +377,7 @@ extension NavigationLink where Destination == Never {
   ///     copy of the value. Pass a `nil` value to disable the link.
   ///   - fileID: The fileID.
   ///   - line: The line.
-  #if compiler(>=6)
-    @MainActor
-  #endif
+  @MainActor
   public init<P>(
     _ titleKey: LocalizedStringKey, state: P?, fileID: StaticString = #fileID, line: UInt = #line
   )
@@ -339,9 +400,7 @@ extension NavigationLink where Destination == Never {
   ///     copy of the value. Pass a `nil` value to disable the link.
   ///   - fileID: The fileID.
   ///   - line: The line.
-  #if compiler(>=6)
-    @MainActor
-  #endif
+  @MainActor
   @_disfavoredOverload
   public init<S: StringProtocol, P>(
     _ title: S, state: P?, fileID: StaticString = #fileID, line: UInt = #line
@@ -389,7 +448,7 @@ public struct _NavigationLinkStoreContent<State, Label: View>: View {
               """
           reportIssue(
             """
-            A navigation link at "\(fileID):\(line)" is unpresentable. …
+            A navigation link at "\(fileID):\(line)" is not presentable.
 
               NavigationStack state element type:
                 \(elementType)
@@ -484,7 +543,7 @@ extension Store {
 @_spi(Internals)
 public var _isInPerceptionTracking: Bool {
   #if DEBUG && !os(visionOS)
-    return _PerceptionLocals.isInPerceptionTracking
+    return _PerceptionLocals.isInPerceptionTracking || _PerceptionLocals.skipPerceptionChecking
   #else
     return false
   #endif

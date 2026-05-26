@@ -71,7 +71,7 @@ struct DownloadComponent {
         state.alert = nil
         return .none
 
-      case let .downloadClient(.success(.updateProgress(progress))):
+      case .downloadClient(.success(.updateProgress(let progress))):
         state.mode = .downloading(progress: progress)
         return .none
 
@@ -120,7 +120,7 @@ enum Mode: Equatable {
   case startingToDownload
 
   var progress: Double {
-    if case let .downloading(progress) = self { return progress }
+    if case .downloading(let progress) = self { return progress }
     return 0
   }
 
@@ -142,7 +142,7 @@ struct DownloadComponentView: View {
     VStack {
       if isVisible {
         button
-          .alert($store.scope(state: \.alert, action: \.alert))
+          .alert($store.scope(\.alert, action: \.alert))
       } else {
         button
       }

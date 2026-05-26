@@ -12,25 +12,24 @@ final class ScopeCacheTests: BaseTCATestCase {
       _ =
         store
         .scope(state: { $0 }, action: { $0 })
-        .scope(state: \.child, action: \.child.presented)?
+        .scope(\.child, action: \.child.presented)?
         .send(.show)
     } issueMatcher: {
-      $0.compactDescription == """
-        failed - Scoping from uncached StoreOf<Feature> is not compatible with observation.
+      $0.compactDescription.hasSuffix(
+        """
+        Scoping from uncached 'StoreOf<Feature>' is not compatible with observation.
 
         This can happen for one of two reasons:
 
-        • A parent view scopes on a store using transform functions, which has been deprecated, \
+        1. A parent view scopes on a store using transform functions, which has been deprecated, \
         instead of with key paths and case paths. Read the migration guide for 1.5 to update these \
-        scopes: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.5
+        scopes: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.5
 
-        • A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
+        2. A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
         'SwitchStore', 'ForEachStore', or any navigation view modifiers taking stores instead of \
-        bindings. Read the migration guide for 1.7 to update those APIs: \
-        https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.7
+        bindings. Read the migration guide for 1.7 to update those APIs: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.7
         """
+      )
     }
     store.send(.child(.dismiss))
   }
@@ -41,12 +40,13 @@ final class ScopeCacheTests: BaseTCATestCase {
       let store = StoreOf<Feature>(initialState: Feature.State(child: Feature.State())) {
       }
       store
-        .scope(state: \.self, action: \.self)
-        .scope(state: \.child, action: \.child.presented)?
+        .scope(\.self, action: \.self)
+        .scope(\.child, action: \.child.presented)?
         .send(.show)
     #endif
   }
 
+  @available(*, deprecated)
   @MainActor
   func testOptionalScope_StoreIfLet() {
     #if DEBUG
@@ -55,9 +55,9 @@ final class ScopeCacheTests: BaseTCATestCase {
       }
       let cancellable =
         store
-        .scope(state: \.child, action: \.child.presented)
+        .scope(\.child, action: \.child.presented)
         .ifLet { store in
-          store.scope(state: \.child, action: \.child.presented)?.send(.show)
+          store.scope(\.child, action: \.child.presented)?.send(.show)
         }
       _ = cancellable
     #endif
@@ -73,26 +73,25 @@ final class ScopeCacheTests: BaseTCATestCase {
         store
         .scope(state: { $0 }, action: { $0 })
         .ifLet { store in
-          store.scope(state: \.child, action: \.child.presented)?.send(.show)
+          store.scope(\.child, action: \.child.presented)?.send(.show)
         }
       _ = cancellable
     } issueMatcher: {
-      $0.compactDescription == """
-        failed - Scoping from uncached StoreOf<Feature> is not compatible with observation.
+      $0.compactDescription.hasSuffix(
+        """
+        Scoping from uncached 'StoreOf<Feature>' is not compatible with observation.
 
         This can happen for one of two reasons:
 
-        • A parent view scopes on a store using transform functions, which has been deprecated, \
+        1. A parent view scopes on a store using transform functions, which has been deprecated, \
         instead of with key paths and case paths. Read the migration guide for 1.5 to update these \
-        scopes: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.5
+        scopes: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.5
 
-        • A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
+        2. A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
         'SwitchStore', 'ForEachStore', or any navigation view modifiers taking stores instead of \
-        bindings. Read the migration guide for 1.7 to update those APIs: \
-        https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.7
+        bindings. Read the migration guide for 1.7 to update those APIs: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.7
         """
+      )
     }
   }
 
@@ -104,8 +103,8 @@ final class ScopeCacheTests: BaseTCATestCase {
 
       let rowsStore = Array(
         store
-          .scope(state: \.self, action: \.self)
-          .scope(state: \.rows, action: \.rows)
+          .scope(\.self, action: \.self)
+          .scope(\.rows, action: \.rows)
       )
       rowsStore[0].send(.show)
     #endif
@@ -121,25 +120,24 @@ final class ScopeCacheTests: BaseTCATestCase {
       _ = Array(
         store
           .scope(state: { $0 }, action: { $0 })
-          .scope(state: \.rows, action: \.rows)
+          .scope(\.rows, action: \.rows)
       )
     } issueMatcher: {
-      $0.compactDescription == """
-        failed - Scoping from uncached StoreOf<Feature> is not compatible with observation.
+      $0.compactDescription.hasSuffix(
+        """
+        Scoping from uncached 'StoreOf<Feature>' is not compatible with observation.
 
         This can happen for one of two reasons:
 
-        • A parent view scopes on a store using transform functions, which has been deprecated, \
+        1. A parent view scopes on a store using transform functions, which has been deprecated, \
         instead of with key paths and case paths. Read the migration guide for 1.5 to update these \
-        scopes: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.5
+        scopes: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.5
 
-        • A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
+        2. A parent feature is using deprecated navigation APIs, such as 'IfLetStore', \
         'SwitchStore', 'ForEachStore', or any navigation view modifiers taking stores instead of \
-        bindings. Read the migration guide for 1.7 to update those APIs: \
-        https://pointfreeco.github.io/swift-composable-architecture/main/documentation/\
-        composablearchitecture/migratingto1.7
+        bindings. Read the migration guide for 1.7 to update those APIs: https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.7
         """
+      )
     }
   }
 }

@@ -108,7 +108,7 @@ struct RecordMeeting {
         state.alert = .speechRecognizerFailed
         return .none
 
-      case let .speechResult(result):
+      case .speechResult(let result):
         state.transcript = result.bestTranscription.formattedString
         return .none
       }
@@ -189,7 +189,7 @@ struct RecordMeetingView: View {
       }
     }
     .navigationBarBackButtonHidden(true)
-    .alert($store.scope(state: \.alert, action: \.alert))
+    .alert($store.scope(\.alert, action: \.alert))
     .task { await store.send(.onTask).finish() }
   }
 }

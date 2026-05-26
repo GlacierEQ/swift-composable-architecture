@@ -1,34 +1,55 @@
 import Combine
+import CombineSchedulers
 import Foundation
 import SwiftUI
 
 /// A store represents the runtime that powers the application. It is the object that you will pass
-/// around to views that need to interact with the application.
+/// around to views so that you can read feature state and send user actions.
 ///
 /// You will typically construct a single one of these at the root of your application:
 ///
 /// ```swift
 /// @main
 /// struct MyApp: App {
+///   static let store = Store(initialState: AppFeature.State()) {
+///     AppFeature()
+///   }
 ///   var body: some Scene {
 ///     WindowGroup {
-///       RootView(
-///         store: Store(initialState: AppFeature.State()) {
-///           AppFeature()
-///         }
-///       )
+///       RootView(store: Self.store)
 ///     }
 ///   }
 /// }
 /// ```
 ///
-/// …and then use the ``scope(state:action:)-90255`` method to derive more focused stores that can be
-/// passed to subviews.
+/// …and then use the ``scope(_:action:)`` method to derive more focused stores that can be passed
+/// to subviews for sub-features.
+///
+/// > Note: Xcode previews create the app entry point when run, which can cause the `Store` to
+/// > be created and dependencies executed when you don't expect them to. For this reason we
+/// > recommend holding onto the root store in `static let`.
+///
+/// In the view you can access any properties from your feature's state directly on the store and
+/// send actions to the store when the user performs an action:
+///
+/// ```swift
+/// struct RootView: View {
+///   let store: StoreOf<AppFeature>
+///   var body: some View {
+///     Form {
+///       Text("\(store.count)")
+///       Button("Tap") {
+///         store.send(.buttonTapped)
+///       }
+///     }
+///   }
+/// }
+/// ```
 ///
 /// ### Scoping
 ///
-/// The most important operation defined on ``Store`` is the ``scope(state:action:)-90255`` method,
-/// which allows you to transform a store into one that deals with child state and actions. This is
+/// The most important operation defined on ``Store`` is the ``scope(_:action:)`` method, which
+/// allows you to transform a store into one that deals with child state and actions. This is
 /// necessary for passing stores to subviews that only care about a small portion of the entire
 /// application's domain.
 ///
@@ -54,9 +75,8 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// We can construct a view for each of these domains by applying ``scope(state:action:)-90255`` to
-/// a store that holds onto the full app domain in order to transform it into a store for each
-/// subdomain:
+/// We can construct a view for each of these domains by applying ``scope(_:action:)`` to a store
+/// that holds onto the full app domain in order to transform it into a store for each subdomain:
 ///
 /// ```swift
 /// struct AppView: View {
@@ -65,17 +85,17 @@ import SwiftUI
 ///   var body: some View {
 ///     TabView {
 ///       ActivityView(
-///         store: store.scope(state: \.activity, action: \.activity)
+///         store: store.scope(\.activity, action: \.activity)
 ///       )
 ///       .tabItem { Text("Activity") }
 ///
 ///       SearchView(
-///         store: store.scope(state: \.search, action: \.search)
+///         store: store.scope(\.search, action: \.search)
 ///       )
 ///       .tabItem { Text("Search") }
 ///
 ///       ProfileView(
-///         store: store.scope(state: \.profile, action: \.profile)
+///         store: store.scope(\.profile, action: \.profile)
 ///       )
 ///       .tabItem { Text("Profile") }
 ///     }
@@ -93,11 +113,7 @@ import SwiftUI
 /// package when targeting iOS <17) by applying the ``ObservableState()`` macro to your feature's
 /// state.
 @dynamicMemberLookup
-#if swift(<5.10)
-  @MainActor(unsafe)
-#else
-  @preconcurrency@MainActor
-#endif
+@preconcurrency @MainActor
 public final class Store<State, Action>: _Store {
   var children: [ScopeID<State, Action>: AnyObject] = [:]
   private weak var parent: (any _Store)?
@@ -150,30 +166,9 @@ public final class Store<State, Action>: _Store {
 
   deinit {
     guard Thread.isMainThread else { return }
-    MainActor._assumeIsolated {
+    MainActor.assumeIsolated {
       Logger.shared.log("\(storeTypeName(of: self)).deinit")
     }
-  }
-
-  /// Calls the given closure with a snapshot of the current state of the store.
-  ///
-  /// A lightweight way of accessing store state when state is not observable and ``state-1qxwl`` is
-  /// unavailable.
-  ///
-  /// - Parameter body: A closure that takes the current state of the store as its sole argument. If
-  ///   the closure has a return value, that value is also used as the return value of the
-  ///   `withState` method. The state argument reflects the current state of the store only for the
-  ///   duration of the closure's execution, and is only observable over time, _e.g._ by SwiftUI, if
-  ///   it conforms to ``ObservableState``.
-  /// - Returns: The return value, if any, of the `body` closure.
-  public func withState<R>(_ body: (_ state: State) -> R) -> R {
-    #if DEBUG
-      _PerceptionLocals.$skipPerceptionChecking.withValue(true) {
-        body(self.currentState)
-      }
-    #else
-      body(self.currentState)
-    #endif
   }
 
   /// Sends an action to the store.
@@ -201,6 +196,30 @@ public final class Store<State, Action>: _Store {
   /// - Parameters:
   ///   - action: An action.
   ///   - animation: An animation.
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, message: "Use 'withAnimation { _ = store.send(action) }' instead")
+  #else
+    @available(
+      iOS,
+      deprecated: 9999,
+      message: "Use 'withAnimation { _ = store.send(action) }' instead"
+    )
+    @available(
+      macOS,
+      deprecated: 9999,
+      message: "Use 'withAnimation { _ = store.send(action) }' instead"
+    )
+    @available(
+      tvOS,
+      deprecated: 9999,
+      message: "Use 'withAnimation { _ = store.send(action) }' instead"
+    )
+    @available(
+      watchOS,
+      deprecated: 9999,
+      message: "Use 'withAnimation { _ = store.send(action) }' instead"
+    )
+  #endif
   @discardableResult
   public func send(_ action: Action, animation: Animation?) -> StoreTask {
     send(action, transaction: Transaction(animation: animation))
@@ -213,6 +232,36 @@ public final class Store<State, Action>: _Store {
   /// - Parameters:
   ///   - action: An action.
   ///   - transaction: A transaction.
+  #if ComposableArchitecture2Deprecations
+    @available(
+      *,
+      deprecated,
+      message: """
+        Use 'withTransaction(transaction) { _ = store.send(action) }' instead
+        """
+    )
+  #else
+    @available(
+      iOS,
+      deprecated: 9999,
+      message: "Use 'withTransaction(transaction) { _ = store.send(action) }' instead"
+    )
+    @available(
+      macOS,
+      deprecated: 9999,
+      message: "Use 'withTransaction(transaction) { _ = store.send(action) }' instead"
+    )
+    @available(
+      tvOS,
+      deprecated: 9999,
+      message: "Use 'withTransaction(transaction) { _ = store.send(action) }' instead"
+    )
+    @available(
+      watchOS,
+      deprecated: 9999,
+      message: "Use 'withTransaction(transaction) { _ = store.send(action) }' instead"
+    )
+  #endif
   @discardableResult
   public func send(_ action: Action, transaction: Transaction) -> StoreTask {
     withTransaction(transaction) {
@@ -248,7 +297,7 @@ public final class Store<State, Action>: _Store {
   /// // Construct a login view by scoping the store
   /// // to one that works with only login domain.
   /// LoginView(
-  ///   store: store.scope(state: \.login, action: \.login)
+  ///   store: store.scope(\.login, action: \.login)
   /// )
   /// ```
   ///
@@ -260,6 +309,24 @@ public final class Store<State, Action>: _Store {
   ///   - state: A key path from `State` to `ChildState`.
   ///   - action: A case key path from `Action` to `ChildAction`.
   /// - Returns: A new store with its domain (state and action) transformed.
+  public func scope<ChildState, ChildAction>(
+    _ state: KeyPath<State, ChildState>,
+    action: CaseKeyPath<Action, ChildAction>
+  ) -> Store<ChildState, ChildAction> {
+    func open(_ core: some Core<State, Action>) -> any Core<ChildState, ChildAction> {
+      ScopedCore(base: core, stateKeyPath: state, actionKeyPath: action)
+    }
+    return scope(id: id(state: state, action: action), childCore: open(core))
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:)")
+  #else
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:)")
+  #endif
   public func scope<ChildState, ChildAction>(
     state: KeyPath<State, ChildState>,
     action: CaseKeyPath<Action, ChildAction>
@@ -288,19 +355,6 @@ public final class Store<State, Action>: _Store {
     return child
   }
 
-  @available(
-    *,
-    deprecated,
-    message:
-      "Pass 'state' a key path to child state and 'action' a case key path to child action, instead. For more information see the following migration guide: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.5#Store-scoping-with-key-paths"
-  )
-  public func scope<ChildState, ChildAction>(
-    state toChildState: @escaping (_ state: State) -> ChildState,
-    action fromChildAction: @escaping (_ childAction: ChildAction) -> Action
-  ) -> Store<ChildState, ChildAction> {
-    _scope(state: toChildState, action: fromChildAction)
-  }
-
   func _scope<ChildState, ChildAction>(
     state toChildState: @escaping (_ state: State) -> ChildState,
     action fromChildAction: @escaping (_ childAction: ChildAction) -> Action
@@ -323,7 +377,7 @@ public final class Store<State, Action>: _Store {
   @_spi(Internals)
   @_disfavoredOverload
   public func send(_ action: Action) -> Task<Void, Never>? {
-    core.send(action)
+    core.send(action, origin: .store)
   }
 
   private init(core: some Core<State, Action>, scopeID: AnyHashable?, parent: (any _Store)?) {
@@ -336,13 +390,15 @@ public final class Store<State, Action>: _Store {
       func subscribeToDidSet<T: ObservableState>(_ type: T.Type) -> AnyCancellable {
         return core.didSet
           .prefix { [weak self] _ in self?.core.isInvalid == false }
-          .compactMap { [weak self] in (self?.currentState as? T)?._$id }
+          .compactMap { [weak self] in (self?.withState(\.self) as? T)?._$id }
           .removeDuplicates()
           .dropFirst()
-          .sink { [weak self] _ in
+          .sink { [weak self, weak parent] _ in
             guard let scopeID = self?.scopeID
             else { return }
-            parent?.removeChild(scopeID: scopeID)
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+              parent?.removeChild(scopeID: scopeID)
+            }
           } receiveValue: { [weak self] _ in
             guard let self else { return }
             self._$observationRegistrar.withMutation(of: self, keyPath: \.currentState) {}
@@ -372,10 +428,34 @@ public final class Store<State, Action>: _Store {
   /// store.publisher.alert
   ///   .sink { ... }
   /// ```
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, message: "Use observation ('Observations', 'observe') instead")
+  #else
+    @available(
+      iOS,
+      deprecated: 9999,
+      message: "Use observation ('Observations', 'observe') instead"
+    )
+    @available(
+      macOS,
+      deprecated: 9999,
+      message: "Use observation ('Observations', 'observe') instead"
+    )
+    @available(
+      tvOS,
+      deprecated: 9999,
+      message: "Use observation ('Observations', 'observe') instead"
+    )
+    @available(
+      watchOS,
+      deprecated: 9999,
+      message: "Use observation ('Observations', 'observe') instead"
+    )
+  #endif
   public var publisher: StorePublisher<State> {
     StorePublisher(
       store: self,
-      upstream: self.core.didSet.map { self.currentState }
+      upstream: self.core.didSet.receive(on: UIScheduler.shared).map { self.withState(\.self) }
     )
   }
 
@@ -416,6 +496,30 @@ extension Store: ObservableObject {}
 public typealias StoreOf<R: Reducer> = Store<R.State, R.Action>
 
 /// A publisher of store state.
+#if ComposableArchitecture2Deprecations
+  @available(*, deprecated, message: "Use observation ('Observations', 'observe') instead")
+#else
+  @available(
+    iOS,
+    deprecated: 9999,
+    message: "Use observation ('Observations', 'observe') instead"
+  )
+  @available(
+    macOS,
+    deprecated: 9999,
+    message: "Use observation ('Observations', 'observe') instead"
+  )
+  @available(
+    tvOS,
+    deprecated: 9999,
+    message: "Use observation ('Observations', 'observe') instead"
+  )
+  @available(
+    watchOS,
+    deprecated: 9999,
+    message: "Use observation ('Observations', 'observe') instead"
+  )
+#endif
 @dynamicMemberLookup
 public struct StorePublisher<State>: Publisher {
   public typealias Output = State
@@ -433,7 +537,11 @@ public struct StorePublisher<State>: Publisher {
     self.upstream.subscribe(
       AnySubscriber(
         receiveSubscription: subscriber.receive(subscription:),
-        receiveValue: subscriber.receive(_:),
+        receiveValue: { value in
+          _PerceptionLocals.$skipPerceptionChecking.withValue(true) {
+            subscriber.receive(value)
+          }
+        },
         receiveCompletion: { [store = self.store] in
           subscriber.receive(completion: $0)
           _ = store

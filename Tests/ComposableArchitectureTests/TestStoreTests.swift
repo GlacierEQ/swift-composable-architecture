@@ -61,7 +61,7 @@ final class TestStoreTests: BaseTCATestCase {
         switch action {
         case .tap:
           return .run { send in await send(.response(42)) }
-        case let .response(number):
+        case .response(let number):
           state = number
           return .none
         }
@@ -91,7 +91,7 @@ final class TestStoreTests: BaseTCATestCase {
         case .increment:
           state.isChanging = true
           return .send(.changed(from: state.count, to: state.count + 1))
-        case let .changed(from, to):
+        case .changed(let from, let to):
           state.isChanging = false
           if state.count == from {
             state.count = to
@@ -369,7 +369,7 @@ final class TestStoreTests: BaseTCATestCase {
         case .tap:
           state.count += 1
           return .run { send in await send(.response(42)) }
-        case let .response(number):
+        case .response(let number):
           state.count = number
           state.date = now
           return .none
@@ -459,14 +459,16 @@ final class TestStoreTests: BaseTCATestCase {
         $0 = 1
       }
     } issueMatcher: {
-      $0.compactDescription == """
-        failed - A state change does not match expectation: …
+      $0.compactDescription.hasSuffix(
+        """
+        A state change does not match expectation.
 
             − 1
             + 0
 
         (Expected: −, Actual: +)
         """
+      )
     }
   }
 
@@ -551,8 +553,9 @@ final class TestStoreTests: BaseTCATestCase {
     await store.receive(\.delegate.success, 42)
 
     XCTExpectFailure {
-      $0.compactDescription == """
-        failed - Received unexpected action: …
+      $0.compactDescription.hasSuffix(
+        """
+        Received unexpected action:
 
             Action.delegate(
           −   .success(43)
@@ -561,6 +564,7 @@ final class TestStoreTests: BaseTCATestCase {
 
         (Expected: −, Actual: +)
         """
+      )
     }
     await store.send(.tap)
     await store.receive(\.delegate.success, 43)
@@ -577,7 +581,7 @@ final class TestStoreTests: BaseTCATestCase {
         case .view(.tap):
           state = state + 1
           return .send(.delegate(.success(42 * 42)))
-        case let .view(.delete(indexSet)):
+        case .view(.delete(let indexSet)):
           let sum = indexSet.reduce(0, +)
           if sum == 42 {
             state = state + 1
@@ -652,9 +656,7 @@ final class TestStoreTests: BaseTCATestCase {
     }
     await store.send(.dismiss)
     XCTExpectFailure {
-      $0.compactDescription == """
-        failed - Can't send action to dismissed test store.
-        """
+      $0.compactDescription.hasSuffix("Can't send action to dismissed test store.")
     }
     await store.send(.onTask)
   }

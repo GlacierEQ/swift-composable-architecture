@@ -4,8 +4,9 @@
   import XCTest
 
   final class RuntimeWarningTests: BaseTCATestCase {
+    @available(*, deprecated)
     @MainActor
-    func testBindingUnhandledAction() {
+    func testBindingUnhandledAction() async throws {
       let line = #line + 2
       struct State: Equatable {
         @BindingState var value = 0
@@ -16,18 +17,23 @@
       let store = Store<State, Action>(initialState: State()) {}
 
       XCTExpectFailure {
-        ViewStore(store, observe: { $0 }).$value.wrappedValue = 42
-      } issueMatcher: {
-        $0.compactDescription == """
-          failed - A binding action sent from a store for binding state defined at \
-          "\(#fileID):\(line)" was not handled. …
+        $0.compactDescription.hasSuffix(
+          """
+          A binding action sent from a store for binding state defined at "\(#fileID):\(line)" was \
+          not handled.
 
             Action:
               RuntimeWarningTests.Action.binding(.set(_, 42))
 
           To fix this, invoke "BindingReducer()" from your feature reducer's "body".
           """
+        )
       }
+
+      let viewStore = ViewStore(store, observe: { $0 })
+      viewStore.$value.wrappedValue = 42
+      try await Task.sleep(nanoseconds: 1_000_000)
+
     }
 
     @ObservableState
@@ -35,7 +41,7 @@
       var count = 0
     }
     @MainActor
-    func testObservableBindingUnhandledAction() {
+    func testObservableBindingUnhandledAction() async throws {
       typealias State = TestObservableBindingUnhandledActionState
       enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
@@ -43,21 +49,25 @@
       let store = Store<State, Action>(initialState: State()) {}
 
       XCTExpectFailure {
-        store.count = 42
-      } issueMatcher: {
-        $0.compactDescription == """
-          failed - A binding action sent from a store was not handled. …
+        $0.compactDescription.hasSuffix(
+          """
+          A binding action sent from a store was not handled.
 
             Action:
               RuntimeWarningTests.Action.binding(.set(_, 42))
 
           To fix this, invoke "BindingReducer()" from your feature reducer's "body".
           """
+        )
       }
+
+      store.count = 42
+      try await Task.sleep(nanoseconds: 1_000_000)
     }
 
+    @available(*, deprecated)
     @MainActor
-    func testBindingUnhandledAction_BindingState() {
+    func testBindingUnhandledAction_BindingState() async throws {
       struct State: Equatable {
         @BindingState var value = 0
       }
@@ -68,18 +78,22 @@
       let store = Store<State, Action>(initialState: State()) {}
 
       XCTExpectFailure {
-        ViewStore(store, observe: { $0 }).$value.wrappedValue = 42
-      } issueMatcher: {
-        $0.compactDescription == """
-          failed - A binding action sent from a store for binding state defined at \
-          "\(#fileID):\(line)" was not handled. …
+        $0.compactDescription.hasSuffix(
+          """
+          A binding action sent from a store for binding state defined at "\(#fileID):\(line)" was \
+          not handled.
 
             Action:
               RuntimeWarningTests.Action.binding(.set(_, 42))
 
           To fix this, invoke "BindingReducer()" from your feature reducer's "body".
           """
+        )
       }
+
+      let viewStore = ViewStore(store, observe: { $0 })
+      viewStore.$value.wrappedValue = 42
+      try await Task.sleep(nanoseconds: 1_000_000)
     }
 
     @Reducer
@@ -99,15 +113,19 @@
       }
 
       XCTExpectFailure {
-        store.scope(state: \.path, action: \.path)[
-          fileID: "file.swift", filePath: "/file.swift", line: 1, column: 1
+        store.scope(\.path, action: \.path)[
+          fileID: "file.swift",
+          filePath: "/file.swift",
+          line: 1,
+          column: 1
         ] = .init()
       } issueMatcher: {
-        $0.compactDescription == """
-          failed - A navigation stack binding at "file.swift:1" was written to with a path that \
-          has the same number of elements that already exist in the store. A view should only \
-          write to this binding with a path that has pushed a new element onto the stack, or \
-          popped one or more elements from the stack.
+        $0.compactDescription.hasSuffix(
+          """
+          A navigation stack binding at "file.swift:1" was written to with a path that has the \
+          same number of elements that already exist in the store. A view should only write to \
+          this binding with a path that has pushed a new element onto the stack, or popped one or \
+          more elements from the stack.
 
           This usually means the "forEach" has not been integrated with the reducer powering the \
           store, and this reducer is responsible for handling stack actions.
@@ -124,6 +142,7 @@
           And ensure that every parent reducer is integrated into the root reducer that powers \
           the store.
           """
+        )
       }
     }
 
@@ -159,9 +178,9 @@
           column: 1
         ] = nil
       } issueMatcher: {
-        $0.compactDescription == """
-          failed - A binding at "file.swift:1" was set to "nil", but the store destination wasn't \
-          nil'd out.
+        $0.compactDescription.hasSuffix(
+          """
+          A binding at "file.swift:1" was set to "nil", but the store destination wasn't nil'd out.
 
           This usually means an "ifLet" has not been integrated with the reducer powering the \
           store, and this reducer is responsible for handling presentation actions.
@@ -178,6 +197,7 @@
           And ensure that every parent reducer is integrated into the root reducer that powers the \
           store.
           """
+        )
       }
     }
   }

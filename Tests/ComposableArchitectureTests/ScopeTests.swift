@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import XCTest
 
-@available(*, deprecated, message: "TODO: Update to use case pathable syntax with Swift 5.9")
+@available(*, deprecated, message: "TODO: Update to use case pathable syntax")
 final class ScopeTests: BaseTCATestCase {
   func testStructChild() async {
     let store = await TestStore(initialState: Feature.State()) {
@@ -45,9 +45,10 @@ final class ScopeTests: BaseTCATestCase {
     }
 
     XCTExpectFailure {
-      $0.compactDescription == """
-        failed - A "Scope" at "\(#fileID):\(#line - 5)" received a child action when child state \
-        was set to a different case. …
+      $0.compactDescription.hasSuffix(
+        """
+        A "Scope" at "\(#fileID):\(#line - 6)" received a child action when child state \
+        was set to a different case.
 
           Action:
             Child2.Action.name
@@ -56,20 +57,21 @@ final class ScopeTests: BaseTCATestCase {
 
         This is generally considered an application logic error, and can happen for a few reasons:
 
-        • A parent reducer set "Child2.State" to a different case before the scoped reducer ran. \
+        A parent reducer set "Child2.State" to a different case before the scoped reducer ran. \
         Child reducers must run before any parent reducer sets child state to a different case. \
         This ensures that child reducers can handle their actions while their state is still \
         available. Consider using "Reducer.ifCaseLet" to embed this child reducer in the \
         parent reducer that change its state to ensure the child reducer runs first.
 
-        • An in-flight effect emitted this action when child state was unavailable. While it may \
+        An in-flight effect emitted this action when child state was unavailable. While it may \
         be perfectly reasonable to ignore this action, consider canceling the associated effect \
         before child state changes to another case, especially if it is a long-living effect.
 
-        • This action was sent to the store while state was another case. Make sure that actions \
+        This action was sent to the store while state was another case. Make sure that actions \
         for this reducer can only be sent from a store when state is set to the appropriate \
         case. In SwiftUI applications, use "SwitchStore".
         """
+      )
     }
 
     await store.send(.name("Blob"))
@@ -87,10 +89,10 @@ private struct Feature {
     case child2(Child2.Action)
   }
   var body: some ReducerOf<Self> {
-    Scope(state: \.child1, action: \.child1) {
+    Scope(\.child1, action: \.child1) {
       Child1()
     }
-    Scope(state: \.child2, action: \.child2) {
+    Scope(\.child2, action: \.child2) {
       Child2()
     }
   }
@@ -132,21 +134,22 @@ private struct Child2 {
     case name(String)
   }
   var body: some ReducerOf<Self> {
-    Scope(state: \.count, action: \.count) {
-      Reduce { state, action in
-        state = action
-        return state < 0
-          ? .run { await $0(0) }
-          : .none
+    EmptyReducer()
+      .ifCaseLet(\.count, action: \.count) {
+        Reduce { state, action in
+          state = action
+          return state < 0
+            ? .run { await $0(0) }
+            : .none
+        }
       }
-    }
-    Scope(state: \.name, action: \.name) {
-      Reduce { state, action in
-        state = action
-        return state.isEmpty
-          ? .run { await $0("Empty") }
-          : .none
+      .ifCaseLet(\.name, action: \.name) {
+        Reduce { state, action in
+          state = action
+          return state.isEmpty
+            ? .run { await $0("Empty") }
+            : .none
+        }
       }
-    }
   }
 }

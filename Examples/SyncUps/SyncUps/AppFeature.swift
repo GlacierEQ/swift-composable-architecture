@@ -25,14 +25,14 @@ struct AppFeature {
   @Dependency(\.uuid) var uuid
 
   var body: some ReducerOf<Self> {
-    Scope(state: \.syncUpsList, action: \.syncUpsList) {
+    Scope(\.syncUpsList, action: \.syncUpsList) {
       SyncUpsList()
     }
     Reduce { state, action in
       switch action {
-      case let .path(.element(_, .detail(.delegate(delegateAction)))):
+      case .path(.element(_, .detail(.delegate(let delegateAction)))):
         switch delegateAction {
-        case let .startMeeting(sharedSyncUp):
+        case .startMeeting(let sharedSyncUp):
           state.path.append(.record(RecordMeeting.State(syncUp: sharedSyncUp)))
           return .none
         }
@@ -53,15 +53,15 @@ struct AppView: View {
   @Bindable var store: StoreOf<AppFeature>
 
   var body: some View {
-    NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-      SyncUpsListView(store: store.scope(state: \.syncUpsList, action: \.syncUpsList))
+    NavigationStack(path: $store.scope(\.path, action: \.path)) {
+      SyncUpsListView(store: store.scope(\.syncUpsList, action: \.syncUpsList))
     } destination: { store in
       switch store.case {
-      case let .detail(store):
+      case .detail(let store):
         SyncUpDetailView(store: store)
-      case let .meeting(meeting, syncUp):
+      case .meeting(let meeting, let syncUp):
         MeetingView(meeting: meeting, syncUp: syncUp)
-      case let .record(store):
+      case .record(let store):
         RecordMeetingView(store: store)
       }
     }

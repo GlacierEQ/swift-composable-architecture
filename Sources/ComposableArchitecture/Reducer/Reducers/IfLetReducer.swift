@@ -100,99 +100,6 @@ extension Reducer {
       column: column
     )
   }
-
-  @available(
-    iOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    macOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    tvOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    watchOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @inlinable
-  @warn_unqualified_access
-  public func ifLet<WrappedState, WrappedAction, Wrapped: Reducer<WrappedState, WrappedAction>>(
-    _ toWrappedState: WritableKeyPath<State, WrappedState?>,
-    action toWrappedAction: AnyCasePath<Action, WrappedAction>,
-    @ReducerBuilder<WrappedState, WrappedAction> then wrapped: () -> Wrapped,
-    fileID: StaticString = #fileID,
-    filePath: StaticString = #filePath,
-    line: UInt = #line,
-    column: UInt = #column
-  ) -> some Reducer<State, Action> {
-    _IfLetReducer(
-      parent: self,
-      child: wrapped(),
-      toChildState: toWrappedState,
-      toChildAction: toWrappedAction,
-      fileID: fileID,
-      filePath: filePath,
-      line: line,
-      column: column
-    )
-  }
-
-  @available(
-    iOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    macOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    tvOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @available(
-    watchOS,
-    deprecated: 9999,
-    message:
-      "Use the version of this operator with case key paths, instead. See the following migration guide for more information: https://pointfreeco.github.io/swift-composable-architecture/main/documentation/composablearchitecture/migratingto1.4#Using-case-key-paths"
-  )
-  @inlinable
-  @warn_unqualified_access
-  public func ifLet<WrappedState: _EphemeralState, WrappedAction>(
-    _ toWrappedState: WritableKeyPath<State, WrappedState?>,
-    action toWrappedAction: AnyCasePath<Action, WrappedAction>,
-    fileID: StaticString = #fileID,
-    filePath: StaticString = #filePath,
-    line: UInt = #line,
-    column: UInt = #column
-  ) -> _IfLetReducer<Self, EmptyReducer<WrappedState, WrappedAction>> {
-    .init(
-      parent: self,
-      child: EmptyReducer(),
-      toChildState: toWrappedState,
-      toChildAction: toWrappedAction,
-      fileID: fileID,
-      filePath: filePath,
-      line: line,
-      column: column
-    )
-  }
 }
 
 public struct _IfLetReducer<Parent: Reducer, Child: Reducer>: Reducer {
@@ -243,7 +150,7 @@ public struct _IfLetReducer<Parent: Reducer, Child: Reducer>: Reducer {
     self.column = column
   }
 
-  public func reduce(
+  public func _reduce(
     into state: inout Parent.State, action: Parent.Action
   ) -> Effect<Parent.Action> {
     let childEffects = self.reduceChild(into: &state, action: action)
@@ -251,7 +158,7 @@ public struct _IfLetReducer<Parent: Reducer, Child: Reducer>: Reducer {
     let childIDBefore = state[keyPath: self.toChildState].map {
       NavigationID(base: $0, keyPath: self.toChildState)
     }
-    let parentEffects = self.parent.reduce(into: &state, action: action)
+    let parentEffects = self.parent._reduce(into: &state, action: action)
     let childIDAfter = state[keyPath: self.toChildState].map {
       NavigationID(base: $0, keyPath: self.toChildState)
     }
@@ -287,22 +194,22 @@ public struct _IfLetReducer<Parent: Reducer, Child: Reducer>: Reducer {
       reportIssue(
         """
         An "ifLet" at "\(self.fileID):\(self.line)" received a child action when child state was \
-        "nil". …
+        "nil".
 
           Action:
         \(String(customDumping: action).indent(by: 4))
 
         This is generally considered an application logic error, and can happen for a few reasons:
 
-        • A parent reducer set child state to "nil" before this reducer ran. This reducer must run \
+        A parent reducer set child state to "nil" before this reducer ran. This reducer must run \
         before any other reducer sets child state to "nil". This ensures that child reducers can \
         handle their actions while their state is still available.
 
-        • An in-flight effect emitted this action when child state was "nil". While it may be \
+        An in-flight effect emitted this action when child state was "nil". While it may be \
         perfectly reasonable to ignore this action, consider canceling the associated effect \
         before child state becomes "nil", especially if it is a long-living effect.
 
-        • This action was sent to the store while state was "nil". Make sure that actions for this \
+        This action was sent to the store while state was "nil". Make sure that actions for this \
         reducer can only be sent from a store when state is non-"nil". In SwiftUI \
         applications, use "IfLetStore".
         """,
@@ -317,7 +224,7 @@ public struct _IfLetReducer<Parent: Reducer, Child: Reducer>: Reducer {
       base: state[keyPath: self.toChildState]!, keyPath: self.toChildState)
     return self.child
       .dependency(\.navigationIDPath, self.navigationIDPath.appending(navigationID))
-      .reduce(into: &state[keyPath: self.toChildState]!, action: childAction)
+      ._reduce(into: &state[keyPath: self.toChildState]!, action: childAction)
       .map { [toChildAction] in toChildAction.embed($0) }
       ._cancellable(id: navigationID, navigationIDPath: self.navigationIDPath)
   }

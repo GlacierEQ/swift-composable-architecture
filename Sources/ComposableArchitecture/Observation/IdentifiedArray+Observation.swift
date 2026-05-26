@@ -37,7 +37,7 @@ extension Store where State: ObservableState {
   ///
   ///   var body: some View {
   ///     List {
-  ///       ForEach(store.scope(state: \.rows, action: \.rows), id: \.state.id) { store in
+  ///       ForEach(store.scope(\.rows, action: \.rows), id: \.state.id) { store in
   ///         ChildView(store: store)
   ///       }
   ///     }
@@ -51,9 +51,9 @@ extension Store where State: ObservableState {
   /// >
   /// > ```diff
   /// >  ForEach(
-  /// > -  store.scope(state: \.rows, action: \.rows),
+  /// > -  store.scope(\.rows, action: \.rows),
   /// > -  id: \.state.id,
-  /// > +  store.scope(state: \.rows, action: \.rows)
+  /// > +  store.scope(\.rows, action: \.rows)
   /// >  ) { childStore in
   /// >    ChildView(store: childStore)
   /// >  }
@@ -67,6 +67,35 @@ extension Store where State: ObservableState {
   ///   - filePath: The filePath.
   ///   - line: The line.
   /// - Returns: An collection of stores of child state.
+  @_disfavoredOverload
+  public func scope<ElementID, ElementState, ElementAction>(
+    _ state: KeyPath<State, IdentifiedArray<ElementID, ElementState>>,
+    action: CaseKeyPath<Action, IdentifiedAction<ElementID, ElementAction>>,
+    fileID: StaticString = #fileID,
+    filePath: StaticString = #filePath,
+    line: UInt = #line,
+    column: UInt = #column
+  ) -> some RandomAccessCollection<Store<ElementState, ElementAction>> {
+    if !core.canStoreCacheChildren {
+      reportIssue(
+        uncachedStoreWarning(self),
+        fileID: fileID,
+        filePath: filePath,
+        line: line,
+        column: column
+      )
+    }
+    return _StoreCollection(self.scope(state, action: action))
+  }
+
+  #if ComposableArchitecture2Deprecations
+    @available(*, deprecated, renamed: "scope(_:action:fileID:filePath:line:column:)")
+  #else
+    @available(iOS, deprecated: 9999, renamed: "scope(_:action:fileID:filePath:line:column:)")
+    @available(macOS, deprecated: 9999, renamed: "scope(_:action:fileID:filePath:line:column:)")
+    @available(tvOS, deprecated: 9999, renamed: "scope(_:action:fileID:filePath:line:column:)")
+    @available(watchOS, deprecated: 9999, renamed: "scope(_:action:fileID:filePath:line:column:)")
+  #endif
   @_disfavoredOverload
   public func scope<ElementID, ElementState, ElementAction>(
     state: KeyPath<State, IdentifiedArray<ElementID, ElementState>>,
@@ -92,13 +121,9 @@ extension Store where State: ObservableState {
 public struct _StoreCollection<ID: Hashable & Sendable, State, Action>: RandomAccessCollection {
   private let store: Store<IdentifiedArray<ID, State>, IdentifiedAction<ID, Action>>
   private let data: IdentifiedArray<ID, State>
-  private let isInPerceptionTracking = _isInPerceptionTracking
+  private let initializedInPerceptionTracking = _isInPerceptionTracking
 
-  #if swift(<5.10)
-    @MainActor(unsafe)
-  #else
-    @preconcurrency@MainActor
-  #endif
+  @preconcurrency @MainActor
   fileprivate init(_ store: Store<IdentifiedArray<ID, State>, IdentifiedAction<ID, Action>>) {
     self.store = store
     store._$observationRegistrar.access(store, keyPath: \.currentState)
@@ -116,10 +141,10 @@ public struct _StoreCollection<ID: Hashable & Sendable, State, Action>: RandomAc
       When passing a scoped store to a 'ForEach' in a lazy view (for example, 'LazyVStack'), it \
       must be eagerly transformed into a collection to avoid access off the main actor:
 
-          Array(store.scope(state: \.elements, action: \.elements))
+          Array(store.scope(\.elements, action: \.elements))
       """#
     )
-    return MainActor._assumeIsolated { [uncheckedSelf = UncheckedSendable(self)] in
+    return MainActor.assumeIsolated { [uncheckedSelf = UncheckedSendable(self)] in
       let `self` = uncheckedSelf.wrappedValue
       var child: Store<State, Action> {
         guard self.data.indices.contains(position)
@@ -146,7 +171,9 @@ public struct _StoreCollection<ID: Hashable & Sendable, State, Action>: RandomAc
         return child
       }
       #if DEBUG
-        return _PerceptionLocals.$isInPerceptionTracking.withValue(self.isInPerceptionTracking) {
+        return _PerceptionLocals.$isInPerceptionTracking.withValue(
+          self.initializedInPerceptionTracking || _isInPerceptionTracking
+        ) {
           child
         }
       #else

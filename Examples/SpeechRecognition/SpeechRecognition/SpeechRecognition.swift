@@ -71,11 +71,11 @@ struct SpeechRecognition {
         }
         return .none
 
-      case let .speech(.success(transcribedText)):
+      case .speech(.success(let transcribedText)):
         state.transcribedText = transcribedText
         return .none
 
-      case let .speechRecognizerAuthorizationStatusResponse(status):
+      case .speechRecognizerAuthorizationStatusResponse(let status):
         state.isRecording = status == .authorized
 
         switch status {
@@ -148,7 +148,7 @@ struct SpeechRecognitionView: View {
       }
     }
     .padding()
-    .alert($store.scope(state: \.alert, action: \.alert))
+    .alert($store.scope(\.alert, action: \.alert))
   }
 }
 

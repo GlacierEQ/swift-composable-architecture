@@ -2,7 +2,6 @@ import Combine
 @_spi(Logging) import ComposableArchitecture
 import XCTest
 
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 final class StoreLifetimeTests: BaseTCATestCase {
   @available(*, deprecated)
   @MainActor
@@ -10,13 +9,13 @@ final class StoreLifetimeTests: BaseTCATestCase {
     let grandparentStore = Store(initialState: Grandparent.State()) {
       Grandparent()
     }
-    let parentStore = grandparentStore.scope(state: \.child, action: \.child)
-    XCTAssertTrue(parentStore === grandparentStore.scope(state: \.child, action: \.child))
+    let parentStore = grandparentStore.scope(\.child, action: \.child)
+    XCTAssertTrue(parentStore === grandparentStore.scope(\.child, action: \.child))
     XCTAssertFalse(
       parentStore === grandparentStore.scope(state: { $0.child }, action: { .child($0) })
     )
-    let childStore = parentStore.scope(state: \.child, action: \.child)
-    XCTAssertTrue(childStore === parentStore.scope(state: \.child, action: \.child))
+    let childStore = parentStore.scope(\.child, action: \.child)
+    XCTAssertTrue(childStore === parentStore.scope(\.child, action: \.child))
     XCTAssertFalse(
       childStore === parentStore.scope(state: { $0.child }, action: { .child($0) })
     )
@@ -29,7 +28,7 @@ final class StoreLifetimeTests: BaseTCATestCase {
       Grandparent()
     }
     var parentStore: Store! = grandparentStore.scope(state: { $0.child }, action: { .child($0) })
-    let childStore = parentStore.scope(state: \.child, action: \.child)
+    let childStore = parentStore.scope(\.child, action: \.child)
 
     childStore.send(.tap)
     XCTAssertEqual(1, grandparentStore.withState(\.child.child.count))
@@ -163,7 +162,6 @@ final class StoreLifetimeTests: BaseTCATestCase {
 }
 
 @Reducer
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 private struct Child {
   struct State: Equatable {
     var count = 0
@@ -195,7 +193,6 @@ private struct Child {
 }
 
 @Reducer
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 private struct Parent {
   struct State: Equatable {
     var child = Child.State()
@@ -204,14 +201,13 @@ private struct Parent {
     case child(Child.Action)
   }
   var body: some ReducerOf<Self> {
-    Scope(state: \.child, action: \.child) {
+    Scope(\.child, action: \.child) {
       Child()
     }
   }
 }
 
 @Reducer
-@available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
 private struct Grandparent {
   struct State: Equatable {
     var child = Parent.State()
@@ -221,7 +217,7 @@ private struct Grandparent {
     case incrementGrandchild
   }
   var body: some ReducerOf<Self> {
-    Scope(state: \.child, action: \.child) {
+    Scope(\.child, action: \.child) {
       Parent()
     }
     Reduce { state, action in

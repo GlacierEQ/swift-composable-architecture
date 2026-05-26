@@ -242,6 +242,7 @@ final class StoreTests: BaseTCATestCase {
     XCTAssertEqual(numCalls3, 6)
   }
 
+  @available(*, deprecated)
   @MainActor
   func testSynchronousEffectsSentAfterSinking() {
     enum Action {
@@ -290,6 +291,7 @@ final class StoreTests: BaseTCATestCase {
     XCTAssertEqual(values, [1, 2, 3, 4])
   }
 
+  @available(*, deprecated)
   @MainActor
   func testLotsOfSynchronousActions() {
     enum Action { case incr, noop }
@@ -361,6 +363,7 @@ final class StoreTests: BaseTCATestCase {
     XCTAssertEqual(outputs, [nil, 1, nil, 1, nil, 1, nil])
   }
 
+  @available(*, deprecated)
   @MainActor
   func testIfLetTwo() {
     let parentStore = Store(initialState: 0) {
@@ -433,6 +436,7 @@ final class StoreTests: BaseTCATestCase {
     subject.send(completion: .finished)
   }
 
+  @available(*, deprecated)
   @MainActor
   func testCoalesceSynchronousActions() {
     let store = Store(initialState: 0) {
@@ -490,7 +494,7 @@ final class StoreTests: BaseTCATestCase {
         state.child = .init(count: nil)
         return .none
 
-      case let .child(childCount):
+      case .child(let childCount):
         state.count = childCount
         return .none
       }
@@ -518,7 +522,11 @@ final class StoreTests: BaseTCATestCase {
 
     XCTAssertEqual(handledActions, [])
 
-    _ = ViewStore(parentStore, observe: { $0 }).send(.button)
+    XCTExpectFailure {
+      _ = ViewStore(parentStore, observe: { $0 }).send(.button)
+    } issueMatcher: {
+      $0.compactDescription.contains("Reentrant actions are undefined")
+    }
     XCTAssertEqual(
       handledActions,
       [
@@ -612,6 +620,7 @@ final class StoreTests: BaseTCATestCase {
     }
   }
 
+  @available(*, deprecated)
   @MainActor
   func testOverrideDependenciesDirectlyOnReducer() {
     let store = Store(initialState: 0) {
@@ -636,6 +645,7 @@ final class StoreTests: BaseTCATestCase {
     }
   }
 
+  @available(*, deprecated)
   @MainActor
   func testOverrideDependenciesDirectlyOnStore() {
     @Dependency(\.uuid) var uuid
@@ -670,21 +680,21 @@ final class StoreTests: BaseTCATestCase {
           } operation: {
             .run { send in await send(.response1(self.count.value)) }
           }
-        case let .response1(count):
+        case .response1(let count):
           state.count = count
           return withDependencies {
             $0.count.value += 1
           } operation: {
             .run { send in await send(.response2(self.count.value)) }
           }
-        case let .response2(count):
+        case .response2(let count):
           state.count = count
           return withDependencies {
             $0.count.value += 1
           } operation: {
             .run { send in await send(.response3(self.count.value)) }
           }
-        case let .response3(count):
+        case .response3(let count):
           state.count = count
           return .none
         }
@@ -732,21 +742,21 @@ final class StoreTests: BaseTCATestCase {
           } operation: {
             .run { send in await send(.response1(self.count.value)) }
           }
-        case let .response1(count):
+        case .response1(let count):
           state.count = count
           return withDependencies {
             $0.count.value += 1
           } operation: {
             .run { send in await send(.response2(self.count.value)) }
           }
-        case let .response2(count):
+        case .response2(let count):
           state.count = count
           return withDependencies {
             $0.count.value += 1
           } operation: {
             .run { send in await send(.response3(self.count.value)) }
           }
-        case let .response3(count):
+        case .response3(let count):
           state.count = count
           return .none
         }
@@ -825,6 +835,7 @@ final class StoreTests: BaseTCATestCase {
     }
   }
 
+  @available(*, deprecated)
   @MainActor
   func testChildParentEffectCancellation() async throws {
     let mainQueue = DispatchQueue.test
@@ -1176,6 +1187,12 @@ final class StoreTests: BaseTCATestCase {
   }
 
   @MainActor
+  func testPublisherAsyncSequence() async {
+    let store = Store<Void, Void>(initialState: ()) {}
+    _ = await store.publisher.values.first { @Sendable _ in true }
+  }
+
+  @MainActor
   func testSharedMutation() async {
     XCTTODO(
       """
@@ -1214,7 +1231,6 @@ final class StoreTests: BaseTCATestCase {
     }
   }
 
-  @available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
   @MainActor func testRootStoreCancellationIsolation() async throws {
     let clock = TestClock()
     let store1 = Store(initialState: RootStoreCancellationIsolation.State()) {
@@ -1238,7 +1254,6 @@ final class StoreTests: BaseTCATestCase {
     XCTAssertEqual(store2.count, 0)
   }
 
-  @available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
   @MainActor func testRootStoreCancellationIsolation_TestStore() async throws {
     let clock = TestClock()
     let store1 = TestStore(initialState: RootStoreCancellationIsolation.State()) {
@@ -1260,7 +1275,6 @@ final class StoreTests: BaseTCATestCase {
     }
   }
 
-  @available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
   @Reducer struct RootStoreCancellationIsolation {
     @ObservableState struct State: Equatable {
       var count = 0
@@ -1295,7 +1309,6 @@ final class StoreTests: BaseTCATestCase {
 #if canImport(Testing)
   @Suite
   struct ModernStoreTests {
-    @available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
     @Reducer
     fileprivate struct TaskTreeFeature {
       let clock: TestClock<Duration>
@@ -1306,12 +1319,12 @@ final class StoreTests: BaseTCATestCase {
         Reduce { state, action in
           switch action {
           case .tap:
-            return Effect.run { send in
+            return .run { send in
               await send(.response1)
             }
           case .response1:
             state.count = 42
-            return Effect.run { send in
+            return .run { send in
               try await clock.sleep(for: .seconds(1))
               await send(.response2)
             }
@@ -1323,7 +1336,6 @@ final class StoreTests: BaseTCATestCase {
       }
     }
 
-    @available(iOS 16, macOS 13, tvOS 16, watchOS 9, *)
     @MainActor
     @Test
     func cancellation() async throws {
@@ -1336,6 +1348,68 @@ final class StoreTests: BaseTCATestCase {
       await clock.run()
       withKnownIssue("Cancelling the root effect should not cancel the child effects.") {
         #expect(store.count == 1729)
+      }
+    }
+
+    @Suite
+    struct ParentChildLifecycle {
+      @MainActor
+      @Test
+      func parentChildLifecycle() async throws {
+        weak var parentStore: StoreOf<Parent>?
+        do {
+          let store = Store(initialState: Parent.State()) {
+            Parent()
+          }
+          parentStore = store
+          store.send(.presentButtonTapped)
+          guard store.scope(state: \.child, action: \.child) != nil else {
+            Issue.record("Child is 'nil'")
+            return
+          }
+        }
+        #expect(parentStore == nil)
+      }
+
+      @Reducer struct Child {
+        @ObservableState struct State {
+          var count = 0
+        }
+        enum Action {
+          case incrementButtonTapped
+        }
+        var body: some Reducer<State, Action> {
+          Reduce { state, action in
+            switch action {
+            case .incrementButtonTapped:
+              state.count += 1
+              return .none
+            }
+          }
+        }
+      }
+      @Reducer struct Parent {
+        @ObservableState struct State {
+          @Presents var child: Child.State?
+        }
+        enum Action {
+          case child(PresentationAction<Child.Action>)
+          case presentButtonTapped
+        }
+        var body: some Reducer<State, Action> {
+          Reduce { state, action in
+            switch action {
+            case .child:
+              return .none
+            case .presentButtonTapped:
+              state.child = Child.State()
+              return .none
+            }
+          }
+          .ifLet(\.$child, action: \.child) {
+            Child()
+          }
+        }
       }
     }
   }

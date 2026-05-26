@@ -33,11 +33,11 @@ struct SharedStateFileStorage {
   }
 
   var body: some Reducer<State, Action> {
-    Scope(state: \.counter, action: \.counter) {
+    Scope(\.counter, action: \.counter) {
       CounterTab()
     }
 
-    Scope(state: \.profile, action: \.profile) {
+    Scope(\.profile, action: \.profile) {
       ProfileTab()
     }
 
@@ -45,7 +45,7 @@ struct SharedStateFileStorage {
       switch action {
       case .counter, .profile:
         return .none
-      case let .selectTab(tab):
+      case .selectTab(let tab):
         state.currentTab = tab
         return .none
       }
@@ -59,13 +59,13 @@ struct SharedStateFileStorageView: View {
   var body: some View {
     TabView(selection: $store.currentTab.sending(\.selectTab)) {
       CounterTabView(
-        store: store.scope(state: \.counter, action: \.counter)
+        store: store.scope(\.counter, action: \.counter)
       )
       .tag(SharedStateFileStorage.Tab.counter)
       .tabItem { Text("Counter") }
 
       ProfileTabView(
-        store: store.scope(state: \.profile, action: \.profile)
+        store: store.scope(\.profile, action: \.profile)
       )
       .tag(SharedStateFileStorage.Tab.profile)
       .tabItem { Text("Profile") }
@@ -173,7 +173,7 @@ private struct CounterTabView: View {
       }
     }
     .buttonStyle(.borderless)
-    .alert($store.scope(state: \.alert, action: \.alert))
+    .alert($store.scope(\.alert, action: \.alert))
   }
 }
 
